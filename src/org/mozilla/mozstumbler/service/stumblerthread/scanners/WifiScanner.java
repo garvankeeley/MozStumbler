@@ -47,12 +47,22 @@ public class WifiScanner extends BroadcastReceiver {
     private final Context mContext;
     private WifiLock mWifiLock;
     private Timer mWifiScanTimer;
+
     private final Set<String> mAPs = Collections.synchronizedSet(new HashSet<String>());
+
+    // lastScanResult prevents spurious intents to cause the stumbler to emit report intents
+    // constantly
+    private ArrayList<ScanResult> lastScanResult = new ArrayList<ScanResult>();
     private AtomicInteger mVisibleAPs = new AtomicInteger();
 
+    private final List<Intent> reportableIntents = Collections.synchronizedList(new ArrayList<Intent>());
+
     /* Testing */
+    // TODO: this all needs to get pushed into a dependency injection
     public static boolean sIsTestMode;
-    public List<ScanResult> mTestModeFakeScanResults = new ArrayList<ScanResult>();
+    public final List<ScanResult> mTestModeFakeScanResults = new ArrayList<ScanResult>();
+    public final List<Intent> _testCaptureBroadcastIntent= new ArrayList<Intent>();
+
     public Set<String> getAccessPoints(android.test.AndroidTestCase restrictedAccessor) { return mAPs; }
     /* ------- */
 
@@ -60,7 +70,7 @@ public class WifiScanner extends BroadcastReceiver {
         mContext = c;
     }
 
-    private boolean isWifiEnabled() {
+    private synchronized boolean isWifiEnabled() {
         return (sIsTestMode) || getWifiManager().isWifiEnabled();
     }
 
@@ -82,7 +92,9 @@ public class WifiScanner extends BroadcastReceiver {
         }
 
         IntentFilter i = new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION);
-        if (!scanAlways) i.addAction(WifiManager.WIFI_STATE_CHANGED_ACTION);
+        if (!scanAlways){
+            i.addAction(WifiManager.WIFI_STATE_CHANGED_ACTION);
+        }
         mContext.registerReceiver(this, i);
     }
 
@@ -207,14 +219,29 @@ public class WifiScanner extends BroadcastReceiver {
         return (WifiManager) mContext.getSystemService(Context.WIFI_SERVICE);
     }
 
-    private void reportScanResults(ArrayList<ScanResult> scanResults) {
+    private synchronized void reportScanResults(ArrayList<ScanResult> scanResults) {
         if (scanResults.isEmpty()) {
             return;
         }
 
+        if (lastScanResult!= null && lastScanResult.equals(scanResults)) {
+            return;
+        }
         Intent i = new Intent(ACTION_WIFIS_SCANNED);
         i.putParcelableArrayListExtra(ACTION_WIFIS_SCANNED_ARG_RESULTS, scanResults);
         i.putExtra(ACTION_WIFIS_SCANNED_ARG_TIME, System.currentTimeMillis());
-        LocalBroadcastManager.getInstance(mContext).sendBroadcastSync(i);
+
+        if (WifiScanner.sIsTestMode) {
+            // TODO: refactor the sIsTestMode flag away using a
+            // dependency injection so that we can use an interface
+            // instead of the actual LocalBroadcastManager For now,
+            // just capture intents into a list used for testing
+            this._testCaptureBroadcastIntent.add(i);
+        } else {
+            LocalBroadcastManager.getInstance(mContext).sendBroadcastSync(i);
+        }
+
+
+        lastScanResult = scanResults;
     }
 }
