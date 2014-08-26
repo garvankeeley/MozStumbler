@@ -24,6 +24,12 @@ public final class StumblerBundle implements Parcelable {
     private final Map<String, ScanResult> mWifiData;
     private final Map<String, CellInfo> mCellData;
 
+    // Put an upper limit on the number of cells and wifis to guard against
+    // unexpected behaviours/inputs. Cells/Wifis beyond this number are not
+    // converted to JSON, nor are they sent out to the DataStorageManager.
+    private static final int MAX_CELLS_GUARD = 50;
+    private static final int MAX_WIFIS_GUARD = 200;
+
     public void wasSent() {
         mGpsPosition.setTime(System.currentTimeMillis());
         mWifiData.clear();
@@ -133,20 +139,32 @@ public final class StumblerBundle implements Parcelable {
         }
 
         JSONArray cellJSON = new JSONArray();
+        int guardCounter = 0;
         for (CellInfo c : mCellData.values()) {
             JSONObject obj = c.toJSONObject();
             cellJSON.put(obj);
+
+            guardCounter++;
+            if (guardCounter > MAX_CELLS_GUARD) {
+                break;
+            }
         }
         item.put(DataStorageContract.ReportsColumns.CELL, cellJSON);
         item.put(DataStorageContract.ReportsColumns.CELL_COUNT, cellJSON.length());
 
         JSONArray wifis = new JSONArray();
+        guardCounter = 0;
         for (ScanResult s : mWifiData.values()) {
             JSONObject wifiEntry = new JSONObject();
             wifiEntry.put("key", s.BSSID);
             wifiEntry.put("frequency", s.frequency);
             wifiEntry.put("signal", s.level);
             wifis.put(wifiEntry);
+
+            guardCounter++;
+            if (guardCounter > MAX_WIFIS_GUARD) {
+                break;
+            }
         }
         item.put(DataStorageContract.ReportsColumns.WIFI, wifis);
         item.put(DataStorageContract.ReportsColumns.WIFI_COUNT, wifis.length());
