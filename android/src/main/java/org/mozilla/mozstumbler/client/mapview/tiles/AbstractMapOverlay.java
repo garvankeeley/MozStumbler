@@ -12,7 +12,7 @@ import android.graphics.drawable.Drawable;
 
 import org.osmdroid.DefaultResourceProxyImpl;
 import org.osmdroid.tileprovider.MapTile;
-import org.osmdroid.tileprovider.MapTileProviderBasic;
+import org.osmdroid.tileprovider.BetterTileProvider;
 import org.osmdroid.tileprovider.ReusableBitmapDrawable;
 import org.osmdroid.util.TileLooper;
 import org.osmdroid.views.Projection;
@@ -36,7 +36,7 @@ public abstract class AbstractMapOverlay extends TilesOverlay {
     private Projection mProjection;
 
     public AbstractMapOverlay(final Context aContext) {
-        super(new MapTileProviderBasic(aContext), new DefaultResourceProxyImpl(aContext));
+        super(new BetterTileProvider(aContext), new DefaultResourceProxyImpl(aContext));
     }
 
     // Though the tile provider can only provide up to 13, this overlay will display higher.
