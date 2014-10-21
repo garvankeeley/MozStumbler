@@ -257,25 +257,31 @@ public final class MapFragment extends android.support.v4.app.Fragment
                     @Override
                     public void run() {
                         synchronized (this) {
-                        IHttpUtil httpUtil = new HttpUtil();
+                            IHttpUtil httpUtil = new HttpUtil();
 
-                        java.util.Scanner scanner;
-                        try {
-                            scanner = new java.util.Scanner(httpUtil.getUrlAsStream(COVERAGE_REDIRECT_URL), "UTF-8");
-                        } catch (Exception ex) {
-                            Log.d(LOG_TAG, ex.toString());
-                            AppGlobals.guiLogInfo("Failed to get coverage url:" + ex.toString());
-                            return;
-                        }
-                        scanner.useDelimiter("\\A");
-                        String result = scanner.next();
-                        try {
+                            java.util.Scanner scanner;
+                            try {
+                                scanner = new java.util.Scanner(httpUtil.getUrlAsStream(COVERAGE_REDIRECT_URL), "UTF-8");
+                            } catch (Exception ex) {
+                                Log.d(LOG_TAG, ex.toString());
+                                AppGlobals.guiLogInfo("Failed to get coverage url:" + ex.toString());
+                                return;
+                            }
+                            scanner.useDelimiter("\\A");
+                            String result = scanner.next();
+                            try {
                                 String sUrl = new JSONObject(result).getString("tiles_url");
                                 setCoverageUrl(sUrl);
-                        } catch (JSONException ex) {
-                            AppGlobals.guiLogInfo("Failed to get coverage url:" + ex.toString());
+                            } catch (JSONException ex) {
+                                AppGlobals.guiLogInfo("Failed to get coverage url:" + ex.toString());
+                            }
+                            scanner.close();
+
+                            // Pump an extra message so that the overlay gets initialized
+                            if (getCoverageUrl() != null) {
+                                mMap.post(mCoverageUrlQuery);
+                            }
                         }
-                        scanner.close();
                     }
                 }, 0);
             } else if (mCoverageTilesOverlayLowZoom == null) {
