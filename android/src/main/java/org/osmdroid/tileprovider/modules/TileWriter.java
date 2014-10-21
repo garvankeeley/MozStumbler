@@ -16,12 +16,13 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.NoSuchElementException;
 
+import org.mozilla.mozstumbler.service.AppGlobals;
+import org.mozilla.mozstumbler.service.core.logging.Log;
 import org.osmdroid.tileprovider.MapTile;
 import org.osmdroid.tileprovider.constants.OpenStreetMapTileProviderConstants;
 import org.osmdroid.tileprovider.tilesource.ITileSource;
 import org.osmdroid.tileprovider.util.StreamUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 
 /**
  * An implementation of {@link IFilesystemCache}. It writes tiles to the file system cache. If the
@@ -45,7 +46,7 @@ public class TileWriter implements IFilesystemCache, OpenStreetMapTileProviderCo
     // Constants
     // ===========================================================
 
-    private static final Logger logger = LoggerFactory.getLogger(TileWriter.class);
+    private static final String LOG_TAG = AppGlobals.LOG_PREFIX + TileWriter.class.getSimpleName();
 
     // ===========================================================
     // Fields
@@ -124,17 +125,17 @@ public class TileWriter implements IFilesystemCache, OpenStreetMapTileProviderCo
             }
             return Long.parseLong(strFileContents);
         } catch (IOException ioEx) {
-            logger.error("Failed to read etag file: ["+cacheControlFile.getPath()+"]", ioEx);
+            Log.e(LOG_TAG, "Failed to read etag file: [" + cacheControlFile.getPath() + "]", ioEx);
         } finally {
             try {
                 if (fis != null) {
                     fis.close();
                 }
             } catch (IOException ioEx) {
-                logger.error("osmdroid: error closing etag inputstream", ioEx);
+                Log.e(LOG_TAG, "osmdroid: error closing etag inputstream", ioEx);
             }
         }
-        logger.error("osmdroid: error loading etag");
+        Log.e(LOG_TAG, "osmdroid: error loading etag");
         return 0;
     }
 
@@ -160,17 +161,17 @@ public class TileWriter implements IFilesystemCache, OpenStreetMapTileProviderCo
             }
             return strFileContents;
         } catch (IOException ioEx) {
-            logger.error("Failed to read etag file: ["+etagFile.getPath()+"]", ioEx);
+            Log.e(LOG_TAG, "Failed to read etag file: ["+etagFile.getPath()+"]", ioEx);
         } finally {
             try {
                 if (fis != null) {
                     fis.close();
                 }
             } catch (IOException ioEx) {
-                logger.error("osmdroid: error closing etag inputstream", ioEx);
+                Log.e(LOG_TAG, "osmdroid: error closing etag inputstream", ioEx);
             }
         }
-        logger.error("osmdroid: error loading etag");
+        Log.e(LOG_TAG, "osmdroid: error loading etag");
         return null;
     }
 
@@ -197,7 +198,7 @@ public class TileWriter implements IFilesystemCache, OpenStreetMapTileProviderCo
             outputStream.flush();
             outputStream.close();
         } catch (IOException ioEx) {
-            logger.error("Failed to create cache control file: ["+cacheControlFile.getPath()+"]", ioEx);
+            Log.e(LOG_TAG, "Failed to create cache control file: ["+cacheControlFile.getPath()+"]", ioEx);
         }
     }
 
@@ -230,9 +231,9 @@ public class TileWriter implements IFilesystemCache, OpenStreetMapTileProviderCo
                 outputStream.write(etag.getBytes(Charset.forName("UTF-8")));
                 outputStream.flush();
                 outputStream.close();
-                logger.info("Wrote ["+ etag +"] file at: ["+etagFile.getPath()+"]");
+                Log.i(LOG_TAG, "Wrote ["+ etag +"] file at: ["+etagFile.getPath()+"]");
             } catch (IOException ioEx) {
-                logger.error("Failed to create etag file: ["+etagFile.getPath()+"]", ioEx);
+                Log.e(LOG_TAG, "Failed to create etag file: ["+etagFile.getPath()+"]", ioEx);
             }
         }
 
@@ -262,7 +263,7 @@ public class TileWriter implements IFilesystemCache, OpenStreetMapTileProviderCo
                 cutCurrentCache(); // TODO perhaps we should do this in the background
             }
         } catch (final IOException e) {
-            logger.error("TileWriter: IOException while writing tile: ", e);
+            Log.e(LOG_TAG, "TileWriter: IOException while writing tile: ", e);
             return false;
         } finally {
             if (outputStream != null) {
@@ -281,7 +282,7 @@ public class TileWriter implements IFilesystemCache, OpenStreetMapTileProviderCo
             return true;
         }
         if (DEBUGMODE) {
-            logger.debug("Failed to create " + pFile + " - wait and check again");
+            Log.d(LOG_TAG, "Failed to create " + pFile + " - wait and check again");
         }
 
         // if create failed, wait a bit in case another thread created it
@@ -292,12 +293,12 @@ public class TileWriter implements IFilesystemCache, OpenStreetMapTileProviderCo
         // and then check again
         if (pFile.exists()) {
             if (DEBUGMODE) {
-                logger.debug("Seems like another thread created " + pFile);
+                Log.d(LOG_TAG, "Seems like another thread created " + pFile);
             }
             return true;
         } else {
             if (DEBUGMODE) {
-                logger.debug("File still doesn't exist: " + pFile);
+                Log.d(LOG_TAG, "File still doesn't exist: " + pFile);
             }
             return false;
         }
@@ -368,7 +369,7 @@ public class TileWriter implements IFilesystemCache, OpenStreetMapTileProviderCo
 
             if (mUsedCacheSpace > TILE_TRIM_CACHE_SIZE_BYTES) {
 
-                logger.info("Trimming tile cache from " + mUsedCacheSpace + " to "
+                Log.i(LOG_TAG, "Trimming tile cache from " + mUsedCacheSpace + " to "
                         + TILE_TRIM_CACHE_SIZE_BYTES);
 
                 final List<File> z = getDirectoryFileList(TILE_PATH_BASE);
@@ -393,12 +394,12 @@ public class TileWriter implements IFilesystemCache, OpenStreetMapTileProviderCo
                     }
                 }
 
-                logger.info("Finished trimming tile cache");
+                Log.i(LOG_TAG, "Finished trimming tile cache");
             }
         }
     }
     private void log(String msg) {
-        logger.info("TileWriter: " + msg);
+        Log.i(LOG_TAG, "TileWriter: " + msg);
     }
 
 }
