@@ -10,13 +10,13 @@ import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 
-import org.osmdroid.DefaultResourceProxyImpl;
-import org.osmdroid.tileprovider.MapTile;
-import org.osmdroid.tileprovider.BetterTileProvider;
-import org.osmdroid.tileprovider.ReusableBitmapDrawable;
-import org.osmdroid.util.TileLooper;
-import org.osmdroid.views.Projection;
-import org.osmdroid.views.overlay.TilesOverlay;
+import org.mozilla.osmdroid.DefaultResourceProxyImpl;
+import org.mozilla.osmdroid.tileprovider.BetterTileProvider;
+import org.mozilla.osmdroid.tileprovider.MapTile;
+import org.mozilla.osmdroid.tileprovider.ReusableBitmapDrawable;
+import org.mozilla.osmdroid.util.TileLooper;
+import org.mozilla.osmdroid.views.Projection;
+import org.mozilla.osmdroid.views.overlay.TilesOverlay;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -62,7 +62,7 @@ public abstract class AbstractMapOverlay extends TilesOverlay {
         public void initialiseLoop(int pZoomLevel, int pTileSizePx) {
             // make sure the cache is big enough for all the tiles
             final int numNeeded = (mLowerRight.y - mUpperLeft.y + 1) * (mLowerRight.x - mUpperLeft.x + 1);
-            mTileProvider.ensureCapacity(numNeeded + getOvershootTileCache());
+            mTileProvider.ensureCapacity(numNeeded + OVERSHOOT_TILE_CACHE_SIZE);
         }
 
         @Override

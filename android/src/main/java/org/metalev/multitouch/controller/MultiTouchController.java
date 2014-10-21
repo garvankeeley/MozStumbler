@@ -49,10 +49,10 @@ package org.metalev.multitouch.controller;
  *   Dual-licensed under the Apache License v2 and the GPL v2.
  */
 
-import java.lang.reflect.Method;
-
 import android.util.Log;
 import android.view.MotionEvent;
+
+import java.lang.reflect.Method;
 
 /**
  * A class that simplifies the implementation of multitouch in applications. Subclass this and read the fields here as needed in subclasses.

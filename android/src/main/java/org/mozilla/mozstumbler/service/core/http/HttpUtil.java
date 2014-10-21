@@ -10,7 +10,7 @@ import org.mozilla.mozstumbler.client.ClientPrefs;
 import org.mozilla.mozstumbler.service.AppGlobals;
 import org.mozilla.mozstumbler.service.core.logging.Log;
 import org.mozilla.mozstumbler.service.utils.Zipper;
-import org.osmdroid.tileprovider.util.StreamUtils;
+import org.mozilla.osmdroid.tileprovider.util.StreamUtils;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -136,7 +136,8 @@ public class HttpUtil implements IHttpUtil {
         try {
             url = new URL(urlString);
         } catch (MalformedURLException e) {
-            throw new IllegalArgumentException("Invalid URL", e);
+            Log.e(LOG_TAG, "Bad URL", e);
+            return null;
         }
 
         if (headers == null) {
@@ -149,7 +150,7 @@ public class HttpUtil implements IHttpUtil {
             httpURLConnection.setRequestMethod("GET");
             httpURLConnection.setRequestProperty(USER_AGENT_HEADER, userAgent);
         } catch (IOException e) {
-            Log.e(LOG_TAG, "Couldn't open a connection: " + e);
+            Log.e(LOG_TAG, "Couldn't open a connection: ", e);
             return null;
         }
 
@@ -172,7 +173,7 @@ public class HttpUtil implements IHttpUtil {
                                     getContentBody(httpURLConnection),
                                     0);
         } catch (IOException e) {
-            Log.e(LOG_TAG, "get error:" + e.toString());
+            Log.e(LOG_TAG, "Networking error", e);
         } finally {
             httpURLConnection.disconnect();
         }
@@ -209,7 +210,7 @@ public class HttpUtil implements IHttpUtil {
             httpURLConnection.setRequestMethod("POST");
 
         } catch (IOException e) {
-            Log.e(LOG_TAG, "Couldn't open a connection: " + e);
+            Log.e(LOG_TAG, "Couldn't open a connection: ", e);
             return null;
         }
 
@@ -252,7 +253,7 @@ public class HttpUtil implements IHttpUtil {
                     getContentBody(httpURLConnection),
                     wire_data.length);
         } catch (IOException e) {
-            Log.e(LOG_TAG, "post error:" + e.toString());
+            Log.e(LOG_TAG, "post error", e);
         } finally {
             httpURLConnection.disconnect();
         }

@@ -1,7 +1,7 @@
 package org.mozilla.mozstumbler.service.core.http;
 
-import org.mozilla.mozstumbler.service.core.logging.Log;
 import org.mozilla.mozstumbler.service.AppGlobals;
+import org.mozilla.mozstumbler.service.core.logging.Log;
 
 import java.io.UnsupportedEncodingException;
 import java.util.List;
