@@ -246,7 +246,6 @@ public final class MapFragment extends android.support.v4.app.Fragment
     final private Runnable mCoverageUrlQuery = new Runnable() {
         @Override
         public void run() {
-            // @TODO: we do a similar "read from URL" in Updater, AbstractCommunicator, make one function for this
             if (sCoverageUrl == null) {
                 mGetUrl.schedule(new TimerTask() {
                     @Override
