@@ -231,7 +231,6 @@ public class TileWriter implements IFilesystemCache, OpenStreetMapTileProviderCo
                 outputStream.write(etag.getBytes(Charset.forName("UTF-8")));
                 outputStream.flush();
                 outputStream.close();
-                Log.i(LOG_TAG, "Wrote ["+ etag +"] file at: ["+etagFile.getPath()+"]");
             } catch (IOException ioEx) {
                 Log.e(LOG_TAG, "Failed to create etag file: ["+etagFile.getPath()+"]", ioEx);
             }
@@ -245,7 +244,7 @@ public class TileWriter implements IFilesystemCache, OpenStreetMapTileProviderCo
         parent = file.getParentFile();
 
         if (!parent.exists() && !createFolderAndCheckIfExists(parent)) {
-            log("Can't create parent folder for actual PNG. parent ["+parent+"]");
+            Log.w(LOG_TAG, "Can't create parent folder for actual PNG. parent ["+parent+"]");
             return false;
         }
 
@@ -256,7 +255,6 @@ public class TileWriter implements IFilesystemCache, OpenStreetMapTileProviderCo
             final long length = StreamUtils.copy(pStream, outputStream);
             outputStream.flush();
             outputStream.close();
-            log("Wrote final tile: ["+file.getPath()+"]");
 
             mUsedCacheSpace += length;
             if (mUsedCacheSpace > TILE_MAX_CACHE_SIZE_BYTES) {
@@ -397,9 +395,6 @@ public class TileWriter implements IFilesystemCache, OpenStreetMapTileProviderCo
                 Log.i(LOG_TAG, "Finished trimming tile cache");
             }
         }
-    }
-    private void log(String msg) {
-        Log.i(LOG_TAG, "TileWriter: " + msg);
     }
 
 }

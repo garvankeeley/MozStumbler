@@ -211,7 +211,6 @@ public class TileDownloaderDelegate {
         Long cacheTs = HTTP404_CACHE.get(url);
         if (cacheTs != null) {
             if (cacheTs.longValue() > System.currentTimeMillis()) {
-                Log.i(LOG_TAG, "404 success");
                 return true;
             }
         }
