@@ -20,7 +20,7 @@ public class ObservationPoint implements MLSLocationGetter.MLSLocationGetterCall
     public final GeoPoint pointGPS;
     public GeoPoint pointMLS;
     private JSONObject mMLSQuery;
-    private MLSLocationGetter mMLSLocationGetter;
+    private boolean mIsMLSLocationQueryRunning;
     public long mTimestamp;
     public int mWifiCount;
     public int mCellCount;
@@ -51,15 +51,16 @@ public class ObservationPoint implements MLSLocationGetter.MLSLocationGetterCall
     }
 
     public void fetchMLS() {
-        if (mMLSQuery == null || pointMLS != null || mMLSLocationGetter != null) {
+        if (mMLSQuery == null || pointMLS != null || mIsMLSLocationQueryRunning) {
             return;
         }
         ClientPrefs prefs = ClientPrefs.getInstance();
         if (prefs.getUseWifiOnly() && !NetworkInfo.getInstance().isWifiAvailable()) {
             return;
         }
-        mMLSLocationGetter = new MLSLocationGetter(this, mMLSQuery);
-        mMLSLocationGetter.execute();
+
+        mIsMLSLocationQueryRunning = true;
+        new MLSLocationGetter(this, mMLSQuery).execute();
     }
 
     public boolean needsToFetchMLS() {
@@ -67,7 +68,8 @@ public class ObservationPoint implements MLSLocationGetter.MLSLocationGetterCall
     }
 
     public void setMLSResponseLocation(Location location) {
-        mMLSLocationGetter = null;
+        mIsMLSLocationQueryRunning = false;
+
         if (location != null) {
             mMLSQuery = null; // todo decide how to persist this to kml
             pointMLS = new GeoPoint(location);
@@ -86,8 +88,11 @@ public class ObservationPoint implements MLSLocationGetter.MLSLocationGetterCall
         pointMLS = new GeoPoint(c.getLatitude(), c.getLongitude());
     }
 
-    public void errorMLSResponse() {
-        Log.i(ObservationPoint.class.getSimpleName(), "Error:" + mMLSQuery.toString());
-        mMLSLocationGetter = null;
+    public void errorMLSResponse(boolean stopRequesting) {
+        if (stopRequesting) {
+            mMLSQuery = null;
+            Log.i(ObservationPoint.class.getSimpleName(), "Error:" + mMLSQuery.toString());
+        }
+        mIsMLSLocationQueryRunning = false;
     }
 }

@@ -26,7 +26,11 @@ public class HTTPResponse implements IResponse {
                 ", Bytes received: " + Integer.toString(bodyBytes.length));
     }
 
-    public boolean isErrorCode4xx() {
+    public boolean isErrorCode400BadRequest(){
+        return 400 == statusCode;
+    }
+
+    public boolean isErrorCode4xx(){
         return statusCode / 100 == 4;
     }
 

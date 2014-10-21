@@ -8,7 +8,6 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
-import android.graphics.Rect;
 import android.location.Location;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
@@ -40,6 +39,7 @@ import org.mozilla.mozstumbler.client.navdrawer.MetricsView;
 import org.mozilla.mozstumbler.service.AppGlobals;
 import org.mozilla.mozstumbler.service.core.http.HttpUtil;
 import org.mozilla.mozstumbler.service.core.http.IHttpUtil;
+import org.mozilla.mozstumbler.service.stumblerthread.scanners.GPSScanner;
 import org.osmdroid.ResourceProxy;
 import org.osmdroid.api.IGeoPoint;
 import org.osmdroid.events.DelayedMapListener;
@@ -59,6 +59,7 @@ import org.osmdroid.views.overlay.Overlay;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public final class MapFragment extends android.support.v4.app.Fragment
         implements MetricsView.IMapLayerToggleListener {
@@ -68,7 +69,6 @@ public final class MapFragment extends android.support.v4.app.Fragment
     private static final String LOG_TAG = AppGlobals.LOG_PREFIX + MapFragment.class.getSimpleName();
 
     private static final String COVERAGE_REDIRECT_URL = "https://location.services.mozilla.com/map.json";
-    private String sCoverageUrl = null;
     private static int sGPSColor;
     private static final String ZOOM_KEY = "zoom";
     private static final int DEFAULT_ZOOM = 13;
@@ -92,6 +92,7 @@ public final class MapFragment extends android.support.v4.app.Fragment
     private View mRootView;
     private TextView mTextViewIsLowResMap;
     private HighLowBandwidthReceiver mHighLowBandwidthChecker;
+    private CoverageSetup mCoverageSetup = new CoverageSetup();
 
     // Used to blank the high-res tile source when adding a low-res overlay
     private class BlankTileSource extends OnlineTileSourceBase {
@@ -204,9 +205,9 @@ public final class MapFragment extends android.support.v4.app.Fragment
         ObservedLocationsReceiver observer = ObservedLocationsReceiver.getInstance();
         observer.setMapActivity(this);
 
-        initTextView(R.id.text_cells_visible);
-        initTextView(R.id.text_wifis_visible);
-        initTextView(R.id.text_observation_count);
+        initTextView(R.id.text_cells_visible, "000");
+        initTextView(R.id.text_wifis_visible, "000");
+        initTextView(R.id.text_observation_count, "00000");
 
         showCopyright();
 
@@ -219,6 +220,7 @@ public final class MapFragment extends android.support.v4.app.Fragment
                 int z = e.getZoomLevel();
                 updateOverlayBaseLayer(z);
                 updateOverlayCoverageLayer(z);
+                mObservationPointsOverlay.zoomChanged(mMap);
                 return true;
             }
 
@@ -235,28 +237,43 @@ public final class MapFragment extends android.support.v4.app.Fragment
         return (MainApp) getActivity().getApplication();
     }
 
-    private synchronized void setCoverageUrl(String url) {
-        sCoverageUrl = url;
-    }
+    private class CoverageSetup {
+        private AtomicBoolean isGetUrlAndInitCoverageRunning = new AtomicBoolean();
+        private String coverageUrl;
 
-    private synchronized String getCoverageUrl() {
-        return sCoverageUrl;
-    }
+        private void initOnMainThread() {
+            final Runnable runnable = new Runnable() {
+                @Override
+                public void run() {
+                    if (mCoverageTilesOverlayLowZoom != null ||  // checks if init() has already happened
+                        ClientPrefs.getInstance().getMapTileResolutionType() == ClientPrefs.MapTileResolutionOptions.NoMap) {
+                        return;
+                    }
+                    initCoverageTiles(coverageUrl);
+                    updateOverlayCoverageLayer(mMap.getZoomLevel());
+                }
+            };
+            mMap.post(runnable);
+        }
 
-    final private Runnable mCoverageUrlQuery = new Runnable() {
-        @Override
-        public void run() {
-            if (getCoverageUrl() == null) {
-                // This is really ugly. We're on a timer task to initialize the coverage url
-                // and require a second pass to setup the coverage tiles.
+        void getUrlAndInit() {
+            if (isGetUrlAndInitCoverageRunning.get() || mCoverageTilesOverlayLowZoom != null) {
+                return;
+            }
+            isGetUrlAndInitCoverageRunning.set(true);
 
-                // @TODO vng: We should really try and cleanup the osmDroid TileProvider class
-                // hierarchy to enable callback functions so that we can dynamically modify the
-                // zoom levels that a TileSource will emit.
-                mGetUrl.schedule(new TimerTask() {
-                    @Override
-                    public void run() {
-                        synchronized (this) {
+            final Runnable coverageUrlQuery = new Runnable() {
+                @Override
+                public void run() {
+                    if (coverageUrl != null) {
+                        initOnMainThread();
+                        isGetUrlAndInitCoverageRunning.set(false);
+                        return;
+                    }
+
+                    mGetUrl.schedule(new TimerTask() {
+                        @Override
+                        public void run() {
                             IHttpUtil httpUtil = new HttpUtil();
 
                             java.util.Scanner scanner;
@@ -265,41 +282,34 @@ public final class MapFragment extends android.support.v4.app.Fragment
                             } catch (Exception ex) {
                                 Log.d(LOG_TAG, ex.toString());
                                 AppGlobals.guiLogInfo("Failed to get coverage url:" + ex.toString());
+                                isGetUrlAndInitCoverageRunning.set(false);
                                 return;
                             }
                             scanner.useDelimiter("\\A");
                             String result = scanner.next();
                             try {
-                                String sUrl = new JSONObject(result).getString("tiles_url");
-                                setCoverageUrl(sUrl);
+                                coverageUrl = new JSONObject(result).getString("tiles_url");
                             } catch (JSONException ex) {
                                 AppGlobals.guiLogInfo("Failed to get coverage url:" + ex.toString());
                             }
                             scanner.close();
-
-                            // Pump an extra message so that the overlay gets initialized
-                            if (getCoverageUrl() != null) {
-                                mMap.post(mCoverageUrlQuery);
-                            }
+                            initOnMainThread();
+                            isGetUrlAndInitCoverageRunning.set(false);
                         }
-                    }
-                }, 0);
-            } else if (mCoverageTilesOverlayLowZoom == null) {
-                if (ClientPrefs.getInstance().getMapTileResolutionType() == ClientPrefs.MapTileResolutionOptions.NoMap) {
-                    return;
+                    }, 0);
                 }
-                initCoverageTiles();
-                updateOverlayCoverageLayer(mMap.getZoomLevel());
-            }
-        }
-    };
+            };
 
-        private void initCoverageTiles() {
-        Log.i(LOG_TAG, "initCoverageTiles: " + getCoverageUrl());
+            mMap.post(coverageUrlQuery);
+        }
+    }
+
+    private void initCoverageTiles(String coverageUrl) {
+        Log.i(LOG_TAG, "initCoverageTiles: " + coverageUrl);
         mCoverageTilesOverlayLowZoom = new CoverageOverlay(CoverageOverlay.LOW_ZOOM,
-                mRootView.getContext(), getCoverageUrl(), mMap);
+                mRootView.getContext(), coverageUrl, mMap);
         mCoverageTilesOverlayHighZoom = new CoverageOverlay(CoverageOverlay.HIGH_ZOOM,
-                mRootView.getContext(), getCoverageUrl(), mMap);
+                mRootView.getContext(), coverageUrl, mMap);
     }
 
     //
@@ -460,7 +470,7 @@ public final class MapFragment extends android.support.v4.app.Fragment
             return;
         }
 
-        mMap.post(mCoverageUrlQuery);
+        mCoverageSetup.getUrlAndInit();
 
         final ConnectivityManager cm = (ConnectivityManager) getActivity().getSystemService(Context.CONNECTIVITY_SERVICE);
         final NetworkInfo info = cm.getActiveNetworkInfo();
@@ -536,8 +546,10 @@ public final class MapFragment extends android.support.v4.app.Fragment
     }
 
     void updateGPSInfo(int satellites, int fixes) {
+        formatTextView(R.id.text_satellites_avail, "%d", satellites);
         formatTextView(R.id.text_satellites_used, "%d", fixes);
-        int icon = fixes > 0 ? R.drawable.ic_gps_receiving_flaticondotcom : R.drawable.ic_gps_no_signal_flaticondotcom;
+        // @TODO this is still not accurate
+        int icon = fixes >= GPSScanner.MIN_SAT_USED_IN_FIX ? R.drawable.ic_gps_receiving_flaticondotcom : R.drawable.ic_gps_no_signal_flaticondotcom;
         ((ImageView) mRootView.findViewById(R.id.fix_indicator)).setImageResource(icon);
     }
 
@@ -586,6 +598,8 @@ public final class MapFragment extends android.support.v4.app.Fragment
 
         ClientPrefs prefs = ClientPrefs.createGlobalInstance(getActivity().getApplicationContext());
         setShowMLS(prefs.getOnMapShowMLS());
+
+        mObservationPointsOverlay.zoomChanged(mMap);
     }
 
     private void saveStateToPrefs() {
@@ -657,12 +671,10 @@ public final class MapFragment extends android.support.v4.app.Fragment
         textView.setText(str);
     }
 
-    private void initTextView(int textViewId) {
+    private void initTextView(int textViewId, String bound) {
         TextView textView = (TextView) mRootView.findViewById(textViewId);
-        Rect bounds = new Rect();
         Paint textPaint = textView.getPaint();
-        textPaint.getTextBounds("00000", 0, "00000".length(), bounds);
-        int width = bounds.width();
+        int width = (int) Math.ceil(textPaint.measureText(bound));
         textView.setWidth(width);
         android.widget.LinearLayout.LayoutParams params =
                 new android.widget.LinearLayout.LayoutParams(width, android.widget.LinearLayout.LayoutParams.MATCH_PARENT);
@@ -671,11 +683,11 @@ public final class MapFragment extends android.support.v4.app.Fragment
     }
 
     public void newMLSPoint(ObservationPoint point) {
-        mObservationPointsOverlay.update();
+        mObservationPointsOverlay.update(point, mMap, true);
     }
 
     public void newObservationPoint(ObservationPoint point) {
-        mObservationPointsOverlay.update();
+        mObservationPointsOverlay.update(point, mMap, false);
     }
 
     @Override

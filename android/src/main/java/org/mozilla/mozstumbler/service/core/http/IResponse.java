@@ -18,5 +18,6 @@ public interface IResponse {
     public boolean isSuccessCode2XX();
     public boolean isErrorCode4xx();
 
-    String getFirstHeader(String key);
+    public String getFirstHeader(String key);
+    public boolean isErrorCode400BadRequest();
 }
