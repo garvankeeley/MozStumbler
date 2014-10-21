@@ -164,7 +164,6 @@ public class HttpUtil implements IHttpUtil {
         // Set headers
         for (Map.Entry<String, String> entry : headers.entrySet()) {
             httpURLConnection.setRequestProperty(entry.getKey(), entry.getValue());
-            Log.i(LOG_TAG, "GET Set ["+entry.getKey()+"] = ["+entry.getValue()+"]");
         }
 
         try {
