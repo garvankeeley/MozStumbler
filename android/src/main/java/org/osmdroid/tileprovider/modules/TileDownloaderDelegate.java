@@ -89,33 +89,25 @@ public class TileDownloaderDelegate {
             return true;
         }
 
-        try {
-            String etag = tileWriter.readEtag(tileSource, tile);
-            if (etag == null) {
-                // No etags mean we want to download the file, no need
-                // to go checking the etag status over the network.
-                return false;
-            }
-
-            final HttpClient client = HttpClientFactory.createHttpClient();
-            final HttpGet httpGet = new HttpGet(tileURLString);
-            httpGet.setHeader(CoreProtocolPNames.USER_AGENT, "osmdroid");
-            httpGet.setHeader(ETAG_MATCH_HEADER, etag);
-            final HttpResponse response = client.execute(httpGet);
-
-            // Check to see if we got success
-            final org.apache.http.StatusLine statusLine = response.getStatusLine();
-            if (statusLine.getStatusCode() == 304) {
-                Log.i(LOG_TAG, "304 success");
-                return true;
-            }
-            Log.i(LOG_TAG, "304 failure: ["+statusLine+"]");
-        } catch (HttpHostConnectException hostEx) {
-            throw hostEx;
-        } catch (IOException ioEx) {
-            Log.e(LOG_TAG, "IOException loading tile from network", ioEx);
+        String etag = tileWriter.readEtag(tileSource, tile);
+        if (etag == null) {
+            // No etags means we want to download the file, no need
+            // to go checking the etag status over the network.
+            return false;
         }
 
+        IHttpUtil httpUtil = new HttpUtil();
+        HashMap<String, String> headers = new HashMap<String, String>();
+        headers.put(ETAG_MATCH_HEADER, etag);
+        IResponse resp = httpUtil.get(tileURLString, headers);
+        if (resp == null) {
+            Log.w(LOG_TAG, "Error with network request.");
+            return false;
+        }
+
+        if (resp.httpResponse() == 304) {
+            return true;
+        }
         return false;
     }
 
