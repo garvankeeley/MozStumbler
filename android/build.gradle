@@ -2,7 +2,7 @@
 def versionMajor = 0
 def versionMinor = 40
 def versionPatch = 4
-def versionBuild = 1 // this is non-zero for any dev build
+def versionBuild = 2 // this is non-zero for any dev build
 
 buildscript {
     repositories {
@@ -147,7 +147,7 @@ dependencies {
 }
 
 tasks.withType(JavaCompile) {
-    options.compilerArgs = ['-Xlint:all', '-Xlint:-deprecation']
+    options.compilerArgs = ['-Xlint:all', '-Werror', '-Xlint:-deprecation']
 }
 
 
