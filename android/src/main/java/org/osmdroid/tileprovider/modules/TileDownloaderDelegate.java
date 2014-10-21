@@ -23,9 +23,6 @@ import org.osmdroid.tileprovider.MapTile;
 import org.osmdroid.tileprovider.util.StreamUtils;
 import org.osmdroid.tileprovider.tilesource.ITileSource;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 /*
  * This is a self contained tile downloader and writer to disk.
  *
@@ -41,7 +38,6 @@ public class TileDownloaderDelegate {
 
     public static final int ONE_HOUR_MS = 1000*60*60;
 
-    private static final Logger logger = LoggerFactory.getLogger(TileDownloaderDelegate.class);
     private final INetworkAvailablityCheck networkAvailablityCheck;
     private final TileWriter tileWriter;
 
@@ -63,7 +59,6 @@ public class TileDownloaderDelegate {
      */
     public boolean isTileCurrent(ITileSource tileSource, MapTile tile) throws HttpHostConnectException {
         if (tileSource == null) {
-            log("tileSource is null");
             return false;
         }
 
@@ -74,7 +69,6 @@ public class TileDownloaderDelegate {
         final String tileURLString = tileSource.getTileURLString(tile);
 
         if (tileURLString == null || tileURLString.length() == 0) {
-            log("No tile URL for ["+tile+"]");
             return false;
         }
 
@@ -88,12 +82,12 @@ public class TileDownloaderDelegate {
         if (System.currentTimeMillis() < tileWriter.readCacheControl(tileSource, tile)) {
             return true;
         }
+
         try {
             String etag = tileWriter.readEtag(tileSource, tile);
             if (etag == null) {
                 // No etags mean we want to download the file, no need
                 // to go checking the etag status over the network.
-                log("No etag found, forcing download ["+tileURLString+"]");
                 return false;
             }
 
@@ -106,19 +100,14 @@ public class TileDownloaderDelegate {
             // Check to see if we got success
             final org.apache.http.StatusLine statusLine = response.getStatusLine();
             if (statusLine.getStatusCode() == 304) {
-                log("Etag is already current ["+tileURLString+"]");
                 return true;
-            } else {
-                log("Etag is not current - actual status line: ["+statusLine+"]");
             }
         } catch (HttpHostConnectException hostEx) {
             throw hostEx;
         } catch (IOException ioEx) {
-            logger.error("IOException loading tile from network", ioEx);
-            log("IOException loading tile from network:" + ioEx.toString());
+            Log.e(LOG_TAG, "IOException loading tile from network", ioEx);
         }
 
-        log("Etag was not current ["+tileURLString+"]");
         return false;
     }
 
@@ -127,7 +116,6 @@ public class TileDownloaderDelegate {
      */
     public boolean downloadTile(ITileSource tileSource, MapTile tile) throws HttpHostConnectException {
         if (tileSource == null) {
-            log("tileSource is null");
             return false;
         }
 
@@ -138,7 +126,6 @@ public class TileDownloaderDelegate {
         final String tileURLString = tileSource.getTileURLString(tile);
 
         if (tileURLString == null || tileURLString.length() == 0) {
-            log("No tile URL for ["+tile+"]");
             return false;
         }
 
@@ -152,26 +139,23 @@ public class TileDownloaderDelegate {
 
         try {
             final HttpClient client = HttpClientFactory.createHttpClient();
-            log("Pre: GET "+ tileURLString);
             HttpGet httpGet = new HttpGet(tileURLString);
             httpGet.setHeader(CoreProtocolPNames.USER_AGENT, "osmdroid");
             final HttpResponse response = client.execute(httpGet);
 
             // Check to see if we got success
             final org.apache.http.StatusLine statusLine = response.getStatusLine();
-            log("Status: "+ statusLine);
             if (statusLine.getStatusCode() != 200) {
                 if (statusLine.getStatusCode() == 404) {
                     HTTP404_CACHE.put(tileURLString, System.currentTimeMillis() + ONE_HOUR_MS);
                 } else {
-                    logger.warn("Unexpected response from tile server: [" + statusLine.toString() +"]");
+                    Log.w(LOG_TAG, "Unexpected response from tile server: [" + statusLine.toString() +"]");
                 }
                 return false;
             }
 
             final HttpEntity entity = response.getEntity();
             if (entity == null) {
-                logger.warn("No content downloading MapTile: " + tile);
                 return false;
             }
 
@@ -190,14 +174,14 @@ public class TileDownloaderDelegate {
                     try {
                         out.close();
                     } catch (IOException ioEx) {
-                        logger.error("Error closing tile output stream.", ioEx);
+                        Log.e(LOG_TAG, "Error closing tile output stream.", ioEx);
                     }
                 }
                 if (in != null) {
                     try {
                         in.close();
                     } catch (IOException ioEx) {
-                        logger.error("Error closing tile output stream.", ioEx);
+                        Log.e(LOG_TAG, "Error closing tile output stream.", ioEx);
                     }
                 }
             }
@@ -220,7 +204,7 @@ public class TileDownloaderDelegate {
         } catch (HttpHostConnectException hostEx) {
             throw hostEx;
         } catch (IOException ioEx) {
-            logger.error("IOException loading tile from network", ioEx);
+            Log.e(LOG_TAG, "IOException loading tile from network", ioEx);
         }
 
         return false;
@@ -234,7 +218,6 @@ public class TileDownloaderDelegate {
      */
     private boolean networkIsUnavailable() {
         if (networkAvailablityCheck != null && !networkAvailablityCheck.getNetworkAvailable()) {
-            log("networkIsUnavailable");
             return true;
         }
         return false;
@@ -247,15 +230,11 @@ public class TileDownloaderDelegate {
         Long cacheTs = HTTP404_CACHE.get(url);
         if (cacheTs != null) {
             if (cacheTs.longValue() > System.currentTimeMillis()) {
-                log("404 cached ["+url+"]");
                 return true;
             }
         }
         return false;
     }
 
-    private void log(String msg) {
-        logger.info("osmdroid: " + msg);
-    }
 }
 
