@@ -145,6 +145,7 @@ public class HttpUtil implements IHttpUtil {
 
         try {
             httpURLConnection = (HttpURLConnection) url.openConnection();
+            httpURLConnection.setConnectTimeout(5000); // set timeout to 5 seconds
             httpURLConnection.setRequestMethod("GET");
             httpURLConnection.setRequestProperty(USER_AGENT_HEADER, userAgent);
         } catch (IOException e) {
@@ -202,7 +203,7 @@ public class HttpUtil implements IHttpUtil {
 
         try {
             httpURLConnection = (HttpURLConnection) url.openConnection();
-
+            httpURLConnection.setConnectTimeout(5000); // set timeout to 5 seconds
             // HttpURLConnection and Java are braindead.
             // http://stackoverflow.com/questions/8587913/what-exactly-does-urlconnection-setdooutput-affect
             httpURLConnection.setDoOutput(true);
