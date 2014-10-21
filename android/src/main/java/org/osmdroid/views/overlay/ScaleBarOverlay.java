@@ -371,8 +371,8 @@ public class ScaleBarOverlay extends Overlay implements GeoConstants {
 				rebuildBarPath(projection);
 			}
 
-			int offsetX = (int) xOffset;
-			int offsetY = (int) yOffset;
+			int offsetX = xOffset;
+			int offsetY = yOffset;
 			if (centred && latitudeBar)
 				offsetX += -latitudeBarRect.width() / 2;
 			if (centred && longitudeBar)
@@ -415,7 +415,7 @@ public class ScaleBarOverlay extends Overlay implements GeoConstants {
 
 	private void drawLatitudeText(final Canvas canvas, final Projection projection) {
 		// calculate dots per centimeter
-		int xdpcm = (int) ((float) xdpi / 2.54);
+		int xdpcm = (int) (xdpi / 2.54);
 
 		// get length in pixel
 		int xLen = (int) (maxLength * xdpcm);
@@ -443,7 +443,7 @@ public class ScaleBarOverlay extends Overlay implements GeoConstants {
 
 	private void drawLongitudeText(final Canvas canvas, final Projection projection) {
 		// calculate dots per centimeter
-		int ydpcm = (int) ((float) ydpi / 2.54);
+		int ydpcm = (int) (ydpi / 2.54);
 
 		// get length in pixel
 		int yLen = (int) (maxLength * ydpcm);
@@ -479,8 +479,8 @@ public class ScaleBarOverlay extends Overlay implements GeoConstants {
 		// to 1-inch at the latitude at the current center of the screen.
 
 		// calculate dots per centimeter
-		int xdpcm = (int) ((float) xdpi / 2.54);
-		int ydpcm = (int) ((float) ydpi / 2.54);
+		int xdpcm = (int) (xdpi / 2.54);
+		int ydpcm = (int) (ydpi / 2.54);
 
 		// get length in pixel
 		int xLen = (int) (maxLength * xdpcm);

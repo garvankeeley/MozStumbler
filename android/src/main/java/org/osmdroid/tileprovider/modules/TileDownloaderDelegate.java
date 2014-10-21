@@ -18,6 +18,8 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.conn.HttpHostConnectException;
 
+import org.mozilla.mozstumbler.service.AppGlobals;
+import org.mozilla.mozstumbler.service.core.logging.Log;
 import org.osmdroid.http.HttpClientFactory;
 import org.osmdroid.tileprovider.MapTile;
 import org.osmdroid.tileprovider.util.StreamUtils;

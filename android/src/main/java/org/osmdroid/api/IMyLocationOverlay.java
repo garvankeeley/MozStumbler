@@ -1,7 +1,5 @@
 package org.osmdroid.api;
 
-import org.osmdroid.views.overlay.MyLocationOverlay;
-
 import android.location.Location;
 import android.os.Bundle;
 

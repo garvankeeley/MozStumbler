@@ -354,8 +354,7 @@ public class MultiTouchController<T> {
 		mCurrXform.set(newPosX, newPosY, newScale, newScaleX, newScaleY, newAngle);
 
 		boolean success = objectCanvas.setPositionAndScale(selectedObject, mCurrXform, mCurrPt);
-		if (!success)
-			; // If we could't set those params, do nothing currently
+
 	}
 
 	/** Indicate if we are in the middle of a pinch action or not. */

@@ -296,6 +296,7 @@ public class MapView extends ViewGroup implements IMapView, MapViewConstants,
 	/**
 	 * @deprecated use {@link #setMapCenter(IGeoPoint)}
 	 */
+    @Deprecated
 	void setMapCenter(final int aLatitudeE6, final int aLongitudeE6) {
 		setMapCenter(new GeoPoint(aLatitudeE6, aLongitudeE6));
 	}
@@ -833,7 +834,7 @@ public class MapView extends ViewGroup implements IMapView, MapViewConstants,
 			try {
 				if (sMotionEventTransformMethod == null) {
 					sMotionEventTransformMethod = MotionEvent.class.getDeclaredMethod("transform",
-							new Class[] { Matrix.class });
+							new Class<?>[] { Matrix.class });
 				}
 				sMotionEventTransformMethod.invoke(rotatedEvent, getProjection()
 						.getInvertedScaleRotateCanvasMatrix());
