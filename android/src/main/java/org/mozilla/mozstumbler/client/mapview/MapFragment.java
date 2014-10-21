@@ -68,7 +68,7 @@ public final class MapFragment extends android.support.v4.app.Fragment
     private static final String LOG_TAG = AppGlobals.LOG_PREFIX + MapFragment.class.getSimpleName();
 
     private static final String COVERAGE_REDIRECT_URL = "https://location.services.mozilla.com/map.json";
-    private static String sCoverageUrl = null;
+    private String sCoverageUrl = null;
     private static int sGPSColor;
     private static final String ZOOM_KEY = "zoom";
     private static final int DEFAULT_ZOOM = 13;
@@ -233,6 +233,14 @@ public final class MapFragment extends android.support.v4.app.Fragment
 
     MainApp getApplication() {
         return (MainApp) getActivity().getApplication();
+    }
+
+    private synchronized void setCoverageUrl(String url) {
+        sCoverageUrl = url;
+    }
+
+    private synchronized String getCoverageUrl() {
+        return sCoverageUrl;
     }
 
     final private Runnable mCoverageUrlQuery = new Runnable() {
