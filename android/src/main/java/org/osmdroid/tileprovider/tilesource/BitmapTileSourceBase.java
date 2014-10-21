@@ -15,6 +15,9 @@ import org.slf4j.LoggerFactory;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
 import android.graphics.drawable.Drawable;
 
 public abstract class BitmapTileSourceBase
@@ -104,6 +107,35 @@ public abstract class BitmapTileSourceBase
             BitmapPool.getInstance().applyReusableOptions(bitmapOptions);
             final Bitmap bitmap = BitmapFactory.decodeFile(aFilePath, bitmapOptions);
             if (bitmap != null) {
+
+
+                // Write the tile name directly onto the bitmap
+                int w = bitmap.getWidth();
+                int h = bitmap.getHeight();
+
+                Paint bgPaint=new Paint();
+                bgPaint.setColor(Color.BLACK);  //transparent black,change opacity by changing hex value "AA" between "00" and "FF"
+                bgPaint.setAlpha(128);
+                Canvas canvas = new Canvas(bitmap);
+                Paint paint = new Paint();
+                paint.setColor(Color.WHITE);
+                paint.setTextSize(12);
+                paint.setAntiAlias(true);
+                paint.setUnderlineText(false);
+
+                // should draw background first,order is important
+                int border = (int)((int)(w*0.01) + 0.5);
+                int left=border;
+                int right=w-border;
+                int bottom=h-border;
+                int top=border;
+                canvas.drawRect(left, top, right, bottom, bgPaint);
+
+
+                File f = new File(aFilePath);
+                File parentDir = f.getParentFile();
+                canvas.drawText(parentDir.getName()+"/"+f.getName(), 10, h-15, paint);
+
                 return new ReusableBitmapDrawable(bitmap);
             } else {
                 // if we couldn't load it then it's invalid - delete it
