@@ -187,13 +187,7 @@ public class SmartFSProvider extends MapTileFileStorageProviderBase {
             }
 
             boolean writeOK = false;
-            try {
-                writeOK = delegate.downloadTile(tileSource, tile);
-            } catch (IOException ioEx) {
-                log("Error fetching tile from map server");
-                logger.error("Error fetching tile from map server", ioEx);
-                return null;
-            }
+            writeOK = delegate.downloadTile(tileSource, tile);
 
             // @TODO: the writeOK flag isn't always going to succeed
             // because of network failures - just ignore it for now

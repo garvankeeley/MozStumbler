@@ -11,10 +11,12 @@ public interface IResponse {
     public int httpResponse();
 
     public String body();
+    public byte[] bodyBytes();
 
     public int bytesSent();
 
     public boolean isSuccessCode2XX();
     public boolean isErrorCode4xx();
 
+    String getFirstHeader(String key);
 }

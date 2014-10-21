@@ -10,10 +10,12 @@ import org.mozilla.mozstumbler.client.ClientPrefs;
 import org.mozilla.mozstumbler.service.AppGlobals;
 import org.mozilla.mozstumbler.service.core.logging.Log;
 import org.mozilla.mozstumbler.service.utils.Zipper;
+import org.osmdroid.tileprovider.util.StreamUtils;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -161,14 +163,16 @@ public class HttpUtil implements IHttpUtil {
         // Set headers
         for (Map.Entry<String, String> entry : headers.entrySet()) {
             httpURLConnection.setRequestProperty(entry.getKey(), entry.getValue());
+            Log.i(LOG_TAG, "GET Set ["+entry.getKey()+"] = ["+entry.getValue()+"]");
         }
 
         try {
             return new HTTPResponse(httpURLConnection.getResponseCode(),
+                                    httpURLConnection.getHeaderFields(),
                                     getContentBody(httpURLConnection),
                                     0);
         } catch (IOException e) {
-            Log.e(LOG_TAG, "post error:" + e.toString());
+            Log.e(LOG_TAG, "get error:" + e.toString());
         } finally {
             httpURLConnection.disconnect();
         }
@@ -244,6 +248,7 @@ public class HttpUtil implements IHttpUtil {
             out.write(wire_data);
             out.flush();
             return new HTTPResponse(httpURLConnection.getResponseCode(),
+                    httpURLConnection.getHeaderFields(),
                     getContentBody(httpURLConnection),
                     wire_data.length);
         } catch (IOException e) {
@@ -254,7 +259,7 @@ public class HttpUtil implements IHttpUtil {
         return null;
     }
 
-    private String getContentBody(HttpURLConnection httpURLConnection) throws IOException {
+    private byte[] getContentBody(HttpURLConnection httpURLConnection) throws IOException {
         InputStream in = null;
         try {
             in = new BufferedInputStream(httpURLConnection.getInputStream());
@@ -262,16 +267,34 @@ public class HttpUtil implements IHttpUtil {
             in = httpURLConnection.getErrorStream();
         }
         if (in == null) {
-            return "";
+            return new byte[]{};
         }
-        BufferedReader r = new BufferedReader(new InputStreamReader(in));
-        String line;
-        StringBuilder total = new StringBuilder(in.available());
-        while ((line = r.readLine()) != null) {
-            total.append(line);
+
+        ByteArrayOutputStream dataStream = null;
+        OutputStream out = null;
+
+        try {
+            dataStream = new ByteArrayOutputStream();
+            out = new BufferedOutputStream(dataStream, StreamUtils.IO_BUFFER_SIZE);
+            StreamUtils.copy(in, out);
+            out.flush();
+        } finally {
+            if (out != null) {
+                try {
+                    out.close();
+                } catch (IOException ioEx) {
+                    Log.e(LOG_TAG, "Error closing tile output stream.", ioEx);
+                }
+            }
+            if (in != null) {
+                try {
+                    in.close();
+                } catch (IOException ioEx) {
+                    Log.e(LOG_TAG, "Error closing tile output stream.", ioEx);
+                }
+            }
         }
-        r.close();
-        in.close();
-        return total.toString();
+
+        return dataStream.toByteArray();
     }
 }
