@@ -126,8 +126,57 @@ public class HttpUtil implements IHttpUtil {
         }
     }
 
+    public IResponse get(String urlString, Map<String, String> headers) {
+
+        URL url = null;
+        HttpURLConnection httpURLConnection = null;
+
+        try {
+            url = new URL(urlString);
+        } catch (MalformedURLException e) {
+            throw new IllegalArgumentException("Invalid URL", e);
+        }
+
+        if (headers == null) {
+            headers = new HashMap<String, String>();
+        }
+
+        try {
+            httpURLConnection = (HttpURLConnection) url.openConnection();
+            httpURLConnection.setRequestMethod("GET");
+            httpURLConnection.setRequestProperty(USER_AGENT_HEADER, userAgent);
+        } catch (IOException e) {
+            Log.e(LOG_TAG, "Couldn't open a connection: " + e);
+            return null;
+        }
+
+
+        // Workaround for a bug in Android mHttpURLConnection. When the library
+        // reuses a stale connection, the connection may fail with an EOFException
+        // http://stackoverflow.com/questions/15411213/android-httpsurlconnection-eofexception/17791819#17791819
+        if (Build.VERSION.SDK_INT > 13 && Build.VERSION.SDK_INT < 19) {
+            httpURLConnection.setRequestProperty("Connection", "Close");
+        }
+
+        // Set headers
+        for (Map.Entry<String, String> entry : headers.entrySet()) {
+            httpURLConnection.setRequestProperty(entry.getKey(), entry.getValue());
+        }
+
+        try {
+            return new HTTPResponse(httpURLConnection.getResponseCode(),
+                                    getContentBody(httpURLConnection),
+                                    0);
+        } catch (IOException e) {
+            Log.e(LOG_TAG, "post error:" + e.toString());
+        } finally {
+            httpURLConnection.disconnect();
+        }
+        return null;
+    }
+
     @Override
-    public IResponse post(String urlString, byte[] data, Map<String, String> headers, boolean precompressed, MLS mls) {
+    public IResponse post(String urlString, byte[] data, Map<String, String> headers, boolean precompressed) {
 
         URL url = null;
         HttpURLConnection httpURLConnection = null;
