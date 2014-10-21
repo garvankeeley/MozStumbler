@@ -246,11 +246,17 @@ public final class MapFragment extends android.support.v4.app.Fragment
     final private Runnable mCoverageUrlQuery = new Runnable() {
         @Override
         public void run() {
-            if (sCoverageUrl == null) {
+            if (getCoverageUrl() == null) {
+                // This is really ugly. We're on a timer task to initialize the coverage url
+                // and require a second pass to setup the coverage tiles.
+
+                // @TODO vng: We should really try and cleanup the osmDroid TileProvider class
+                // hierarchy to enable callback functions so that we can dynamically modify the
+                // zoom levels that a TileSource will emit.
                 mGetUrl.schedule(new TimerTask() {
                     @Override
                     public void run() {
-
+                        synchronized (this) {
                         IHttpUtil httpUtil = new HttpUtil();
 
                         java.util.Scanner scanner;
@@ -264,7 +270,8 @@ public final class MapFragment extends android.support.v4.app.Fragment
                         scanner.useDelimiter("\\A");
                         String result = scanner.next();
                         try {
-                            sCoverageUrl = new JSONObject(result).getString("tiles_url");
+                                String sUrl = new JSONObject(result).getString("tiles_url");
+                                setCoverageUrl(sUrl);
                         } catch (JSONException ex) {
                             AppGlobals.guiLogInfo("Failed to get coverage url:" + ex.toString());
                         }
@@ -275,17 +282,18 @@ public final class MapFragment extends android.support.v4.app.Fragment
                 if (ClientPrefs.getInstance().getMapTileResolutionType() == ClientPrefs.MapTileResolutionOptions.NoMap) {
                     return;
                 }
-                initCoverageTiles(sCoverageUrl);
+                initCoverageTiles();
                 updateOverlayCoverageLayer(mMap.getZoomLevel());
             }
         }
     };
 
-    private void initCoverageTiles(String coverageUrl) {
+        private void initCoverageTiles() {
+        Log.i(LOG_TAG, "initCoverageTiles: " + getCoverageUrl());
         mCoverageTilesOverlayLowZoom = new CoverageOverlay(CoverageOverlay.LOW_ZOOM,
-                mRootView.getContext(), coverageUrl, mMap);
+                mRootView.getContext(), getCoverageUrl(), mMap);
         mCoverageTilesOverlayHighZoom = new CoverageOverlay(CoverageOverlay.HIGH_ZOOM,
-                mRootView.getContext(), coverageUrl, mMap);
+                mRootView.getContext(), getCoverageUrl(), mMap);
     }
 
     //
