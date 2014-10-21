@@ -18,13 +18,12 @@ import org.slf4j.LoggerFactory;
 import android.graphics.drawable.Drawable;
 
 /**
- * This is a fork of the  MapTileFilesystemProvider which also spawns
- * off threads to download tiles asynchronously if a file on local
- * storage cannot be found.
+ * This is a fork of the  MapTileFilesystemProvider which provides
+ * etag support as well as honoring Cache-Control headers.
  *
- * Concurrent tile access controls are required when spawning threads
- * to ensure that multiple requests for the same tile are not made to
- * the network.
+ * Note that you will not see concurrency code in here as an
+ * ExecutorService is implemented in a superclass
+ * MapTileModuleProviderBase.
  *
  * @author Victor Ng
  * @author Marc Kurtz
@@ -104,6 +103,9 @@ public class SmartFSProvider extends MapTileFileStorageProviderBase {
 
     @Override
     protected Runnable getTileLoader() {
+        // @TODO vng: this is called far up the inheritance chain in super class
+        // MapTileModuleProviderBase::loadMapTileAsync(...).  This
+        // whole class hierarchy should be squashed down.
         return new TileLoader();
     }
 
@@ -192,10 +194,11 @@ public class SmartFSProvider extends MapTileFileStorageProviderBase {
                 logger.error("Error fetching tile from map server", ioEx);
                 return null;
             }
-            // @TODO: the writeOK flag isn't always correct - just
-            // ignore it for now and test for file existence. The tile
-            // will get updated anyway on the next redraw using
-            // conditional get
+
+            // @TODO: the writeOK flag isn't always going to succeed
+            // because of network failures - just ignore it for now
+            // and test for file existence. The tile will get updated
+            // anyway on the next redraw using conditional get.
 
             file = new File(TILE_PATH_BASE, tileSource.getTileRelativeFilenameString(tile) + TILE_PATH_EXTENSION);
             if (file.exists()) {
