@@ -55,6 +55,10 @@ public class Log {
     }
 
     public static void d(String logTag, String s) {
+        if (BuildConfig.BUILD_TYPE.equals("release")) {
+            return;
+        }
+
         if (BuildConfig.BUILD_TYPE.equals("unittest")) {
             System.out.println("d: " + logTag + ", " + s);
         } else {
