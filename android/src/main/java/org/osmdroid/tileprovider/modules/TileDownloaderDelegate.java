@@ -49,6 +49,7 @@ public class TileDownloaderDelegate {
     private static final int HTTP404_CACHE_SIZE = 2000;
     Map<String, Long> HTTP404_CACHE = Collections.synchronizedMap(new LruCache<String, Long>(HTTP404_CACHE_SIZE));
 
+    private static final String LOG_TAG = AppGlobals.LOG_PREFIX + TileDownloaderDelegate.class.getSimpleName();
 
     public TileDownloaderDelegate(INetworkAvailablityCheck pNetworkAvailablityCheck,
                                   TileWriter tw) {
@@ -84,6 +85,9 @@ public class TileDownloaderDelegate {
             return true;
         }
 
+        if (System.currentTimeMillis() < tileWriter.readCacheControl(tileSource, tile)) {
+            return true;
+        }
         try {
             String etag = tileWriter.readEtag(tileSource, tile);
             if (etag == null) {

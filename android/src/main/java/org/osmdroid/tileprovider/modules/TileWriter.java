@@ -102,6 +102,42 @@ public class TileWriter implements IFilesystemCache, OpenStreetMapTileProviderCo
     // Methods from SuperClass/Interfaces
     // ===========================================================
 
+    public long readCacheControl(final ITileSource pTileSource, final MapTile pTile) {
+        File file;
+        File cacheControlFile;
+        BufferedInputStream inputStream;
+
+        String tileFilename = pTileSource.getTileRelativeFilenameString(pTile);
+        cacheControlFile = new File(TILE_PATH_BASE,
+                tileFilename + ".cache_control");
+
+        FileInputStream fis = null;
+        try {
+            fis = new FileInputStream(cacheControlFile.getPath());
+            inputStream = new BufferedInputStream(fis);
+            byte[] contents = new byte[1024];
+
+            int bytesRead=0;
+            String strFileContents = ""; 
+            while((bytesRead = inputStream.read(contents)) != -1){ 
+                strFileContents = new String(contents, 0, bytesRead);
+            }
+            return Long.parseLong(strFileContents);
+        } catch (IOException ioEx) {
+            logger.error("Failed to read etag file: ["+cacheControlFile.getPath()+"]", ioEx);
+        } finally {
+            try {
+                if (fis != null) {
+                    fis.close();
+                }
+            } catch (IOException ioEx) {
+                logger.error("osmdroid: error closing etag inputstream", ioEx);
+            }
+        }
+        logger.error("osmdroid: error loading etag");
+        return 0;
+    }
+
     public String readEtag(final ITileSource pTileSource, final MapTile pTile) {
         File file;
         File etagFile;
@@ -139,10 +175,37 @@ public class TileWriter implements IFilesystemCache, OpenStreetMapTileProviderCo
     }
 
 
+    private void saveCacheControl(final ITileSource pTileSource, final MapTile pTile) {
+        String tileFilename = pTileSource.getTileRelativeFilenameString(pTile);
+        File cacheControlFile = new File(TILE_PATH_BASE,
+                tileFilename + ".cache_control");
+
+        File parent = cacheControlFile.getParentFile();
+        BufferedOutputStream outputStream;
+
+        if (!parent.exists() && !createFolderAndCheckIfExists(parent)) {
+            return;
+        }
+
+        try {
+            FileOutputStream fos = new FileOutputStream(cacheControlFile.getPath());
+            outputStream = new BufferedOutputStream(fos);
+
+            // Just hardcode 300 seconds into the future for now
+            String cache_value = Long.toString(System.currentTimeMillis() + (300 *1000));
+            outputStream.write(cache_value.getBytes(Charset.forName("UTF-8")));
+            outputStream.flush();
+            outputStream.close();
+        } catch (IOException ioEx) {
+            logger.error("Failed to create cache control file: ["+cacheControlFile.getPath()+"]", ioEx);
+        }
+    }
+
+    // @TODO vng: this should really just take in a header defined as
+    // Map<String, String> instead of the single etag header
     @Override
     public boolean saveFile(final ITileSource pTileSource, final MapTile pTile,
             final InputStream pStream, String etag) {
-
         File file;
         File etagFile;
         BufferedOutputStream outputStream;
@@ -172,6 +235,8 @@ public class TileWriter implements IFilesystemCache, OpenStreetMapTileProviderCo
                 logger.error("Failed to create etag file: ["+etagFile.getPath()+"]", ioEx);
             }
         }
+
+        saveCacheControl(pTileSource, pTile);
 
         file = new File(TILE_PATH_BASE, 
                     pTileSource.getTileRelativeFilenameString(pTile) + TILE_PATH_EXTENSION);
