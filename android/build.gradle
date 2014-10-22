@@ -68,6 +68,8 @@ android {
         buildConfigField "String", "MOZILLA_API_KEY", getMozillaApiKey()
         buildConfigField "String", "TILE_SERVER_URL", getTileServerUrl()
 
+        buildConfigField "boolean", "LABEL_MAP_TILES", "false"
+
         // Crash report settings
         buildConfigField "String", "ACRA_URI", getAcraURI()
         buildConfigField "String", "ACRA_USER", getAcraUser()
@@ -82,6 +84,11 @@ android {
     buildTypes {
         debug {
             jniDebugBuild true
+
+            // set this to false if you want your debug builds to have
+            // standard unlabelled tiles.
+            buildConfigField "boolean", "LABEL_MAP_TILES", "true"
+
         }
 
         release {

@@ -7,6 +7,7 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.drawable.Drawable;
 
+import org.mozilla.mozstumbler.BuildConfig;
 import org.mozilla.mozstumbler.service.AppGlobals;
 import org.mozilla.mozstumbler.service.core.logging.Log;
 import org.mozilla.osmdroid.ResourceProxy;
@@ -107,7 +108,7 @@ public abstract class BitmapTileSourceBase
             BitmapPool.getInstance().applyReusableOptions(bitmapOptions);
             final Bitmap bitmap = BitmapFactory.decodeFile(aFilePath, bitmapOptions);
             if (bitmap != null) {
-                if (AppGlobals.isDebug) {
+                if (BuildConfig.LABEL_MAP_TILES) {
                     // Write the tile name directly onto the bitmap
                     int w = bitmap.getWidth();
                     int h = bitmap.getHeight();
