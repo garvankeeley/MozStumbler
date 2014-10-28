@@ -1,5 +1,7 @@
 package org.mozilla.mozstumbler.client;
 
+import android.util.Log;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -54,6 +56,28 @@ public class MainDrawerActivityTest {
         assertFalse(upd.checkForUpdates(activity, ""));
         assertFalse(upd.checkForUpdates(activity, null));
         assertTrue(upd.checkForUpdates(activity, "anything_else"));
+
+        Log.d("xxx", "z");
+        while (upd.mIsRunning.get()) {
+            Log.d("xxx", "a");
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException ex) {}
+        }
+
+        String latest = upd.mTestValues.get("latest-version");
+        assertTrue(latest != null);
+        upd.downloadAndInstallUpdate(activity, latest);
+
+        while (upd.mIsRunning.get()) {
+            Log.d("xxx", "b");
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException ex) {}
+        }
+
+        String file = upd.mTestValues.get("file");
+        assertTrue(file != null);
     }
 
 }
