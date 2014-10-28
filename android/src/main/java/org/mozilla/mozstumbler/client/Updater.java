@@ -44,8 +44,8 @@ public class Updater {
         return !NetworkInfo.getInstance().isWifiAvailable() && ClientPrefs.getInstance().getUseWifiOnly();
     }
 
-    public AtomicBoolean mIsRunning = new AtomicBoolean();
-    public Dictionary<String, String> mTestValues = new Hashtable<String, String>();
+    // Init to a value for test mode
+    public Dictionary<String, String> mTestValues;
 
     public boolean checkForUpdates(final Activity activity, String api_key) {
 
@@ -58,7 +58,7 @@ public class Updater {
         if (wifiExclusiveAndUnavailable()) {
             return false;
         }
-        mIsRunning.set(true);
+
         new AsyncTask<Void, Void, IResponse>() {
             @Override
             public IResponse doInBackground(Void... params) {
@@ -67,7 +67,6 @@ public class Updater {
 
             @Override
             public void onPostExecute(IResponse response) {
-                mIsRunning.set(false);
                 if (response == null) {
                     return;
                 }
@@ -98,8 +97,11 @@ public class Updater {
                 Log.d(LOG_TAG, "Installed version: " + installedVersion);
                 Log.d(LOG_TAG, "Latest version: " + latestVersion);
 
-                mTestValues.put("install-version", installedVersion);
-                mTestValues.put("latest-version", latestVersion);
+                if (mTestValues != null) {
+                    mTestValues.put("install-version", installedVersion);
+                    mTestValues.put("latest-version", latestVersion);
+                    return;
+                }
 
                 if (isVersionGreaterThan(latestVersion, installedVersion) && !activity.isFinishing()) {
                     showUpdateDialog(activity, installedVersion, latestVersion);
@@ -111,7 +113,7 @@ public class Updater {
     }
 
 
-    private boolean isVersionGreaterThan(String a, String b) {
+    public boolean isVersionGreaterThan(String a, String b) {
         if (a == null) {
             return false;
         }
@@ -189,7 +191,6 @@ public class Updater {
     }
 
     public void downloadAndInstallUpdate(final Context context, final String version) {
-        mIsRunning.set(true);
         new AsyncTask<Void, Void, File>() {
             @Override
             public File doInBackground(Void... params) {
@@ -205,8 +206,10 @@ public class Updater {
 
             @Override
             public void onPostExecute(File result){
-                mIsRunning.set(false);
-                mTestValues.put("file", result.getName());
+                if (mTestValues != null) {
+                    mTestValues.put("file", result.getName());
+                }
+
                 if (result != null) {
                     installPackage(context, result);
                 }

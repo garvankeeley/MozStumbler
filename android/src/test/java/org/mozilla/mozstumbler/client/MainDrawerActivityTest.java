@@ -6,6 +6,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import org.mozilla.mozstumbler.service.core.http.HttpUtil;
 import org.mozilla.mozstumbler.service.core.http.IHttpUtil;
 import org.mozilla.mozstumbler.service.core.http.MockHttpUtil;
 import org.mozilla.mozstumbler.client.navdrawer.MainDrawerActivity;
@@ -13,6 +14,9 @@ import org.mozilla.mozstumbler.client.navdrawer.MainDrawerActivity;
 import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
+import org.robolectric.shadows.ShadowLog;
+
+import java.util.Hashtable;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -49,36 +53,30 @@ public class MainDrawerActivityTest {
             }
         }
 
-        IHttpUtil mockHttp = new MockHttpUtil();
+        ShadowLog.stream = System.out;
 
+        Robolectric.getFakeHttpLayer().interceptHttpRequests(false);
+        IHttpUtil mockHttp = new HttpUtil();
+
+        ShadowLog.stream = System.out;
 
         Updater upd = new TestUpdater(mockHttp);
-        //assertFalse(upd.checkForUpdates(activity, ""));
-       // assertFalse(upd.checkForUpdates(activity, null));
+        assertFalse(upd.checkForUpdates(activity, ""));
+        assertFalse(upd.checkForUpdates(activity, null));
+
+        upd.mTestValues = new Hashtable<String, String>();
+
         assertTrue(upd.checkForUpdates(activity, "anything_else"));
 
         Robolectric.runBackgroundTasks();
         Robolectric.runUiThreadTasks();
-        Log.d("xxx", "z");
-        while (upd.mIsRunning.get()) {
-            Log.d("xxx", "a");
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException ex) {}
-        }
 
         String latest = upd.mTestValues.get("latest-version");
         assertTrue(latest != null);
         upd.downloadAndInstallUpdate(activity, latest);
 
-        while (upd.mIsRunning.get()) {
-            Log.d("xxx", "b");
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException ex) {}
-        }
-
         String file = upd.mTestValues.get("file");
+        Log.d(getClass().getSimpleName(), "got file:" + file);
         assertTrue(file != null);
     }
 
