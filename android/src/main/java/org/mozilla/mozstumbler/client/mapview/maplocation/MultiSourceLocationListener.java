@@ -21,13 +21,11 @@ public class MultiSourceLocationListener {
     private final MapUpdatingLocationListener mNetworkLocationListener;
     private final MapUpdatingLocationListener mGpsLocationListener;
 
-    private final WeakReference<MapFragment> mMapFragment;
-
     MultiSourceLocationListener(LocationManager manager, MapFragment mapFragment) {
         mLocationManager = manager;
-        mMapFragment = new WeakReference<MapFragment>(mapFragment);
-        mNetworkLocationListener = new MapUpdatingLocationListener(mapFragment, LocationManager.NETWORK_PROVIDER, 1000, null);
-        mGpsLocationListener = new MapUpdatingLocationListener(mapFragment, LocationManager.GPS_PROVIDER, 1000, mReceivedGpsLocation);
+
+        mNetworkLocationListener = new NetworkMapUpdatingLocationListener(mapFragment, null);
+        mGpsLocationListener = new GPSMapUpdatingLocationListener(mapFragment, mReceivedGpsLocation);
     }
 
     public void start() {
