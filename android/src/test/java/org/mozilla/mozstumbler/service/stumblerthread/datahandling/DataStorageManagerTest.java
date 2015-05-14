@@ -4,6 +4,7 @@ import android.app.Application;
 import android.content.Context;
 import android.location.Location;
 import android.net.wifi.ScanResult;
+import android.provider.ContactsContract;
 
 import org.json.JSONException;
 import org.junit.Before;
@@ -15,6 +16,9 @@ import org.mozilla.mozstumbler.service.stumblerthread.Reporter;
 import org.mozilla.mozstumbler.service.stumblerthread.datahandling.base.JSONRowsObjectBuilder;
 import org.mozilla.mozstumbler.service.stumblerthread.datahandling.base.JSONRowsStorageManager;
 import org.mozilla.mozstumbler.service.stumblerthread.scanners.cellscanner.CellInfo;
+import org.mozilla.mozstumbler.svclocator.ServiceLocator;
+import org.mozilla.mozstumbler.svclocator.services.log.ILogger;
+import org.mozilla.mozstumbler.svclocator.services.log.LoggerUtil;
 import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
@@ -30,6 +34,9 @@ import static org.mozilla.mozstumbler.service.stumblerthread.ReporterTest.create
 @RunWith(RobolectricTestRunner.class)
 public class DataStorageManagerTest {
 
+    private static final ILogger Log = (ILogger) ServiceLocator.getInstance().getService(ILogger.class);
+    private static final String LOG_TAG = LoggerUtil.makeLogTag(DataStorageManagerTest.class);
+
     private DataStorageManager dm;
     private Reporter rp;
     private Context ctx;
@@ -41,14 +48,14 @@ public class DataStorageManagerTest {
     int getInMemoryRowCount() {
         Field field = null;
         try {
-            field = JSONRowsStorageManager.class.getDeclaredField("mInMemoryActiveJSONRows");
+            field = DataStorageManager.class.getSuperclass().getDeclaredField("mInMemoryActiveJSONRows");
             field.setAccessible(true);
         } catch (NoSuchFieldException e) {
             e.printStackTrace();
             fail();
         }
         try {
-            return (Integer) field.get(dm);
+            return ((JSONRowsObjectBuilder) field.get(dm)).entriesCount();
         } catch (IllegalAccessException e) {
             e.printStackTrace();
             fail();
